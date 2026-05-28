@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feliz Cumpleaños Mi Amor</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow-x: hidden;
+        }
+        h1 {
+            color: #d81646;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        p {
+            color: #444;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        /* Contenedor del formulario */
+        #form-container {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            max-width: 90%;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ff9a9e;
+            font-size: 1em;
+            font-family: inherit;
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #d81646;
+            box-shadow: 0 0 5px rgba(216, 22, 70, 0.3);
+        }
+        
+        #juego-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .ruleta-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            margin-top: 10px;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 5px solid #fff;
+            transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .puntero {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 35px solid #d81646;
+            z-index: 10;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1.2em;
+            background-color: #d81646;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: background 0.3s, transform 0.2s;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #b01036;
+            transform: scale(1.05);
+        }
+        #resultado {
+            margin-top: 25px;
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #d81646;
+            min-height: 40px;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>¡Feliz Cumpleaños!</h1>
+    
+    <!-- Formulario para que ella escriba 3 opciones -->
+    <div id="form-container">
+        <p>Tengo 3 regalos sorpresa para ti, ¡pero tú eliges otras 3 opciones! Escríbelas aquí:</p>
+        <div class="input-group">
+            <input type="text" id="op1" placeholder="Tu deseo 1..." maxlength="35">
+        </div>
+        <div class="input-group">
+            <input type="text" id="op2" placeholder="Tu deseo 2..." maxlength="35">
+        </div>
+        <div class="input-group">
+            <input type="text" id="op3" placeholder="Tu deseo 3..." maxlength="35">
+        </div>
+        <button id="btn-armar">¡Armar mi Ruleta!</button>
+    </div>
+
+    <!-- Ruleta (oculta al principio) -->
+    <div id="juego-container">
+        <p>Gira la ruleta y descubre tu regalito...</p>
+        <div class="ruleta-container">
+            <div class="puntero"></div>
+            <canvas id="ruleta" width="350" height="350"></canvas>
+        </div>
+        <button id="btn-girar">¡Girar Ruleta!</button>
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("ruleta");
+        const ctx = canvas.getContext("2d");
+        const btnArmar = document.getElementById("btn-armar");
+        const btnGirar = document.getElementById("btn-girar");
+        const formContainer = document.getElementById("form-container");
+        const juegoContainer = document.getElementById("juego-container");
+        const divResultado = document.getElementById("resultado");
+
+        // Opciones iniciales (tus 3 y 3 vacías que ella llenará)
+        let opciones = [
+            "Usar mi parte de atrás 🍑",
+            "Fantasía secreta 🔥",
+            "Tú mandas esta noche 😈",
+            "",
+            "",
+            ""
+        ];
+
+        const colores = ["#FFB6C1", "#FF69B4", "#FFC0CB", "#FF1493", "#DB7093", "#C71585"];
+        
+        let anguloActual = 0;
+        const numOpciones = opciones.length;
+        const arco = (2 * Math.PI) / numOpciones;
+
+        function dibujarRuleta() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar canvas
+            for (let i = 0; i < numOpciones; i++) {
+                const anguloInicio = i * arco;
+                const anguloFin = anguloInicio + arco;
+                
+                ctx.beginPath();
+                ctx.fillStyle = colores[i];
+                ctx.moveTo(175, 175);
+                ctx.arc(175, 175, 175, anguloInicio, anguloFin);
+                ctx.fill();
+                ctx.save();
+                
+                ctx.fillStyle = "white";
+                ctx.translate(
+                    175 + Math.cos(anguloInicio + arco / 2) * 110,
+                    175 + Math.sin(anguloInicio + arco / 2) * 110
+                );
+                ctx.rotate(anguloInicio + arco / 2);
+                ctx.textAlign = "center";
+                ctx.font = "bold 14px Arial";
+                
+                const texto = opciones[i] ? opciones[i] : "?";
+                const palabras = texto.split(" ");
+                if (palabras.length > 3) {
+                    ctx.fillText(palabras.slice(0, 3).join(" "), 0, -5);
+                    ctx.fillText(palabras.slice(3).join(" "), 0, 10);
+                } else {
+                    ctx.fillText(texto, 0, 5);
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        // Evento para guardar las de ella y mostrar el juego
+        btnArmar.addEventListener("click", () => {
+            const v1 = document.getElementById("op1").value.trim();
+            const v2 = document.getElementById("op2").value.trim();
+            const v3 = document.getElementById("op3").value.trim();
+
+            if (!v1 || !v2 || !v3) {
+                alert("Por favor, ¡llena tus 3 deseos para poder jugar! 😘");
+                return;
+            }
+
+            // Agregamos un emoji para diferenciarlos un poco (opcional)
+            opciones[3] = v1 + " ✨";
+            opciones[4] = v2 + " ✨";
+            opciones[5] = v3 + " ✨";
+
+            // Intercalamos las tuyas con las de ella para que estén distribuidas
+            const opcionesMezcladas = [
+                opciones[0], opciones[3],
+                opciones[1], opciones[4],
+                opciones[2], opciones[5]
+            ];
+            opciones = opcionesMezcladas;
+
+            // Ocultar form y mostrar ruleta
+            formContainer.style.display = "none";
+            juegoContainer.style.display = "flex";
+            
+            dibujarRuleta();
+        });
+
+        let girando = false;
+
+        btnGirar.addEventListener("click", () => {
+            if (girando) return;
+            girando = true;
+            divResultado.innerText = "Girando... 😳";
+            
+            const gradosExtra = Math.floor(Math.random() * 360) + (360 * 4); 
+            anguloActual += gradosExtra;
+            
+            canvas.style.transform = \
+otate(\deg)\;
+            
+            setTimeout(() => {
+                const gradosReales = anguloActual % 360;
+                const indiceModulo = Math.floor(((360 - gradosReales + 270) % 360) / (360 / numOpciones));
+                const ganador = opciones[indiceModulo];
+                
+                divResultado.innerHTML = \¡Te ganaste: <br> <strong>\</strong>! 🎉\;
+                girando = false;
+            }, 4000); 
+        });
+    </script>
+</body>
+</html>
